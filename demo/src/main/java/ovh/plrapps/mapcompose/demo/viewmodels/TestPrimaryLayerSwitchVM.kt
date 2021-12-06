@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ovh.plrapps.mapcompose.api.enableRotation
 import ovh.plrapps.mapcompose.api.scrollTo
 import ovh.plrapps.mapcompose.api.setPrimaryLayer
@@ -24,7 +25,7 @@ class TestPrimaryLayerSwitchVM(application: Application) : AndroidViewModel(appl
     private val tileStreamProvider = makeTileStreamProvider(appContext, type)
 
     val state: MapState by mutableStateOf(
-        MapState(4, 4096, 4096, tileStreamProvider).apply {
+        MapState(4, 4096, 4096, tileStreamProvider, workerCount = 8).apply {
             shouldLoopScale = true
             enableRotation()
             viewModelScope.launch {
@@ -54,7 +55,10 @@ class TestPrimaryLayerSwitchVM(application: Application) : AndroidViewModel(appl
         /* Pay attention to how type is captured and immutable in the context of the TileStreamProvider */
         return TileStreamProvider { row, col, _ ->
             runCatching {
-                appContext.assets?.open("tiles/test/tile_${type}_${col}_$row.png")
+                runBlocking {
+                    delay((40L..100L).random())
+                    appContext.assets?.open("tiles/test/tile_${type}_${col}_$row.png")
+                }
             }.onFailure {
                 it.printStackTrace()
             }.getOrNull()
